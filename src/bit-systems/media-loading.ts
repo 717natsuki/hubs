@@ -1,5 +1,5 @@
 import { addComponent, defineQuery, enterQuery, exitQuery, hasComponent, removeComponent, removeEntity } from "bitecs";
-import { Box3, Euler, Vector3 } from "three";
+import { Box3, Vector3 } from "three";
 import { HubsWorld } from "../app";
 import {
   GLTFModel,
@@ -17,7 +17,6 @@ import { ErrorObject } from "../prefabs/error-object";
 import { LoadingObject } from "../prefabs/loading-object";
 import { animate } from "../utils/animate";
 import { setNetworkedDataWithoutRoot } from "../utils/assign-network-ids";
-import { computeObjectAABB } from "../utils/auto-box-collider";
 import { crClearTimeout, crNextFrame, crTimeout } from "../utils/coroutine";
 import { ClearFunction, JobRunner, withRollback } from "../utils/coroutine-utils";
 import { easeOutQuadratic } from "../utils/easing";
@@ -30,37 +29,7 @@ import { loadAudio } from "../utils/load-audio";
 import { loadHtml } from "../utils/load-html";
 import { MediaType, mediaTypeName, resolveMediaInfo } from "../utils/media-utils";
 import { EntityID } from "../utils/networking-types";
-
-const getBox = (() => {
-  const rotation = new Euler();
-  return (world: HubsWorld, eid: EntityID, rootEid: EntityID, worldSpace?: boolean) => {
-    const box = new Box3();
-    const obj = world.eid2obj.get(eid)!;
-    const rootObj = world.eid2obj.get(rootEid)!;
-
-    rotation.copy(obj.rotation);
-    obj.rotation.set(0, 0, 0);
-    obj.updateMatrices(true, true);
-    rootObj.updateMatrices(true, true);
-    rootObj.updateMatrixWorld(true);
-
-    computeObjectAABB(rootObj, box, false);
-
-    if (!box.isEmpty()) {
-      if (!worldSpace) {
-        obj.worldToLocal(box.min);
-        obj.worldToLocal(box.max);
-      }
-      obj.rotation.copy(rotation);
-      obj.matrixNeedsUpdate = true;
-    }
-
-    rootObj.matrixWorldNeedsUpdate = true;
-    rootObj.updateMatrices();
-
-    return box;
-  };
-})();
+import { getBox } from "../utils/three-utils";
 
 export function* waitForMediaLoaded(world: HubsWorld, eid: EntityID) {
   while (hasComponent(world, MediaLoader, eid)) {
@@ -234,6 +203,7 @@ function* loadMedia(world: HubsWorld, eid: EntityID) {
 }
 
 const tmpVector = new Vector3();
+const box = new Box3();
 function* loadAndAnimateMedia(world: HubsWorld, eid: EntityID, clearRollbacks: ClearFunction) {
   if (MediaLoader.flags[eid] & MEDIA_LOADER_FLAGS.IS_OBJECT_MENU_TARGET) {
     addComponent(world, ObjectMenuTarget, eid);
@@ -251,7 +221,7 @@ function* loadAndAnimateMedia(world: HubsWorld, eid: EntityID, clearRollbacks: C
 
   if (media) {
     if (hasComponent(world, MediaLoaded, media)) {
-      const box = getBox(world, eid, media);
+      getBox(world, eid, media, box);
       addComponent(world, MediaContentBounds, eid);
       box.getSize(tmpVector);
       MediaContentBounds.bounds[eid].set(tmpVector.toArray());

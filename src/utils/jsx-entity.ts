@@ -3,7 +3,6 @@ import { preloadFont } from "troika-three-text";
 import {
   $isStringType,
   CameraTool,
-  ObjectMenu,
   LinkHoverMenu,
   LinkHoverMenuItem,
   PDFMenu,
@@ -39,7 +38,9 @@ import {
   VideoTextureSource,
   Quack,
   Mirror,
-  MixerAnimatableInitialize
+  MixerAnimatableInitialize,
+  ObjectMenu,
+  ObjectMenuTransform
 } from "../bit-components";
 import { inflateMediaLoader } from "../inflators/media-loader";
 import { inflateMediaFrame } from "../inflators/media-frame";
@@ -359,6 +360,7 @@ export interface JSXComponentData extends ComponentData {
   waypointPreview?: boolean;
   pdf?: PDFParams;
   loopAnimation?: LoopAnimationParams;
+  objectMenuTransform?: true;
 }
 
 export interface GLTFComponentData extends ComponentData {
@@ -471,6 +473,7 @@ const jsxInflators: Required<{ [K in keyof JSXComponentData]: InflatorFn }> = {
   image: inflateImage,
   video: inflateVideo,
   link: inflateLink,
+  objectMenuTransform: createDefaultInflator(ObjectMenuTransform)
 };
 
 export const gltfInflators: Required<{ [K in keyof GLTFComponentData]: InflatorFn }> = {

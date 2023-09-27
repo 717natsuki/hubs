@@ -365,6 +365,8 @@ export function createPlaneBufferGeometry(width, height, widthSegments, heightSe
 }
 
 import { Layers } from "../camera-layers";
+import { computeObjectAABB } from "./auto-box-collider";
+import { Euler } from "three";
 
 // This code is from three-vrm. We will likely be using that in the future and this inlined code can go away
 function excludeTriangles(triangles, bws, skinIndex, exclude) {
@@ -497,3 +499,34 @@ export function traverseSome(obj, fn) {
     }
   }
 }
+
+// Gets the bounding box of the entity hierarchy starting at boxRootEid without accounting for the eid entity rotation
+export const getBox = (() => {
+  const rotation = new Euler();
+  return (world, eid, boxRootEid, box, worldSpace = false) => {
+    const obj = world.eid2obj.get(eid);
+    const boxRootObj = world.eid2obj.get(boxRootEid);
+
+    rotation.copy(obj.rotation);
+    obj.rotation.set(0, 0, 0);
+    obj.updateMatrices(true, true);
+    boxRootObj.updateMatrices(true, true);
+    boxRootObj.updateMatrixWorld(true);
+
+    computeObjectAABB(boxRootObj, box, false);
+
+    if (!box.isEmpty()) {
+      if (!worldSpace) {
+        obj.worldToLocal(box.min);
+        obj.worldToLocal(box.max);
+      }
+      obj.rotation.copy(rotation);
+      obj.matrixNeedsUpdate = true;
+    }
+
+    boxRootObj.matrixWorldNeedsUpdate = true;
+    boxRootObj.updateMatrices();
+
+    return box;
+  };
+})();

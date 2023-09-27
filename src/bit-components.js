@@ -280,7 +280,9 @@ export const ObjectMenu = defineComponent({
   rotateButtonRef: Types.eid,
   mirrorButtonRef: Types.eid,
   scaleButtonRef: Types.eid,
-  targetRef: Types.eid
+  targetRef: Types.eid,
+  handlingTargetRef: Types.eid,
+  flags: Types.ui8
 });
 // TODO: Store this data elsewhere, since only one or two will ever exist.
 export const LinkHoverMenu = defineComponent({
@@ -381,3 +383,6 @@ export const LinearScale = defineComponent({
 export const Quack = defineComponent();
 export const TrimeshTag = defineComponent();
 export const HeightFieldTag = defineComponent();
+export const ObjectMenuTransform = defineComponent({
+  targetObjectRef: Types.eid
+});
